@@ -20,6 +20,7 @@ use AdrianMejias\Blunder\Blunder;
 
 $blunder = new Blunder();
 $blunder->register();
+```
 
 ## Testing
 

@@ -1,0 +1,56 @@
+{
+    "name": "adrianmejias/blunder",
+    "description": "A PHP library that provides a pretty output for PHP error and exception handling.",
+    "keywords": [
+        "php",
+        "library",
+        "class",
+        "error-handling",
+        "exception-handling"
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/adrianmejias/blunder",
+    "support": {
+        "issues": "https://github.com/adrianmejias/blunder/issues",
+        "source": "https://github.com/adrianmejias/blunder"
+    },
+    "authors": [
+        {
+            "name": "Adrian Mejias",
+            "email": "adrianmejias@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^7.4|^8.0"
+    },
+    "require-dev": {
+        "mockery/mockery": "^1.4",
+        "phpunit/php-code-coverage": "^9.2",
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "AdrianMejias\\Blunder\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AdrianMejias\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit tests/ --coverage-clover clover.xml"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.x-dev"
+        }
+    },
+    "config": {
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

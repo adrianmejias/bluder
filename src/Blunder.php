@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AdrianMejias\Blunder;
 
 use Throwable;
+use Exception;
 
 class Blunder
 {
@@ -30,18 +31,104 @@ class Blunder
     public string $mode = 'PHP';
 
     /**
+     * Open with.
+     *
+     * @var null|string
+     */
+    public ?string $openWith = 'phpstorm';
+
+    /**
+     * Editors.
+     *
+     * @var array
+     */
+    public array $editors = [
+        'sublime' => 'subl://open?url=file://%file&line=%line',
+        'textmate' => 'txmt://open?url=file://%file&line=%line',
+        'emacs' => 'emacs://open?url=file://%file&line=%line',
+        'macvim' => 'mvim://open/?url=file://%file&line=%line',
+        'phpstorm' => 'phpstorm://open?file=%file&line=%line',
+        'idea' => 'idea://open?file=%file&line=%line',
+        'vscode' => 'vscode://file/%file:%line',
+        'atom' => 'atom://core/open/file?filename=%file&line=%line',
+        'espresso' => 'x-espresso://open?filepath=%file&lines=%line',
+        'netbeans' => 'netbeans://open/?f=%file:%line',
+    ];
+
+    /**
+     * Error levels.
+     *
+     * @var int
+     */
+    public int $levels = E_ALL | E_STRICT;
+
+    /**
+     * Variables.
+     *
+     * @var array
+     */
+    public array $variables = [];
+
+    public function __destruct()
+    {
+        restore_error_handler();
+        restore_exception_handler();
+    }
+
+    /**
      * Register blunder instance handler.
      *
      * @return \AdrianMejias\Blunder
      */
     public function register(): Blunder
     {
+        $environment = getenv('APP_ENV') ?
+            getenv('APP_ENV') : 'local';
+
+        if ($environment !== 'local') {
+            throw new Exception(
+                'This library should only be ran locally.',
+                E_USER_WARNING
+            );
+        }
+
         $this->mode = defined('HHVM_VERSION') ? 'HHVM' : 'PHP';
+        $this->openWith = getenv('BLUNDER_OPEN_WITH') ?
+            getenv('BLUNDER_OPEN_WITH') : '';
 
         set_exception_handler([$this, 'handleException']);
-        set_error_handler([$this, 'handleError']);
+        set_error_handler([$this, 'handleError'], $this->levels);
+        register_shutdown_function([$this, 'handleShutdown']);
 
         return $this;
+    }
+
+    /**
+     * Set open with.
+     *
+     * @param string $openWith
+     * @return void
+     */
+    public function setOpenWith(string $openWith): void
+    {
+        $this->openWith = $openWith;
+    }
+
+    /**
+     * Handle shutdown.
+     *
+     * @return bool
+     */
+    public function handleShutdown(): bool
+    {
+        $error = error_get_last();
+
+        return $this->handleError(
+            (int) ($error['type'] ?? 0),
+            $error['message'] ?? '',
+            $error['file'] ?? __FILE__,
+            (int) ($error['line'] ?? __LINE__)
+        );
     }
 
     /**
@@ -58,7 +145,7 @@ class Blunder
         array_pop($backtrace);
 
         $this->setStackTrace(
-            'Exception',
+            $e::class,
             $e->getCode(),
             $e->getMessage(),
             $e->getFile(),
@@ -67,27 +154,27 @@ class Blunder
             $e->statusCode ?? 0
         );
 
-        return $this->render();
+        return $this->render(true);
     }
 
     /**
      * Handle error.
      *
-     * @param integer $code
-     * @param string $message
-     * @param string $file
-     * @param integer $line
+     * @param int $errno
+     * @param string $errstr
+     * @param string $errfile
+     * @param int $errline
      * @return bool
      */
     public function handleError(
-        int $code,
-        string $message,
-        string $file,
-        int $line
+        int $errno,
+        string $errstr,
+        string $errfile,
+        int $errline
     ): bool {
-        $type = $this->getErrorType($code);
+        $type = $this->getErrorType($errno);
 
-        $this->setStackTrace($type, $code, $message, $file, $line, [], 0);
+        $this->setStackTrace($type, $errno, $errstr, $errfile, $errline, [], 0);
 
         return $this->render();
     }
@@ -144,10 +231,25 @@ class Blunder
             'message' => $message,
             'file' => $file,
             'line' => $line,
+            'open_with' => $this->getOpenWith($file, $line),
             'code' => $code,
             'http_code' => $httpCode == 0 ? http_response_code() : $httpCode,
             'backtrace' => $backtrace,
         ];
+    }
+
+    /**
+     * Get open with.
+     *
+     * @return null|string
+     */
+    public function getOpenWith(string $file, int $line): ?string
+    {
+        return str_replace(
+            ['%file', '%line'],
+            [rawurlencode($file), $line],
+            $this->editors[$this->openWith] ?? ''
+        );
     }
 
     /**
@@ -170,17 +272,43 @@ class Blunder
 
             $text = trim($file[$i]);
 
-            if ($i == $line - 1) {
-                $this->preview .= '<span>' . ($i + 1) . '</span>';
-                $this->preview .= '<span>' . $text . '</span><br>';
+            if ($i == ($line - 1)) {
+                $this->preview .= '<div class="flex justify-start align-middle items-center -my-1">';
+                $this->preview .=
+                    '<div class="flex align-center items-center justify-center w-16 px-2 py-3 bg-gray-300 border-gray-400 border-t-2">' .
+                    ($i + 1) .
+                    '</div>';
+                $this->preview .=
+                    '<div class="bg-red-200 text-red-800 px-2 border-white border-t-2 py-3 w-full">' .
+                    static::entities($text) .
+                    '</div>';
+                $this->preview .= '</div>';
                 continue;
             }
 
-            $this->preview .= '<span>' . ($i + 1) . '</span>';
-            $this->preview .= '<span>' . $text . '</span><br>';
+            $this->preview .= '<div class="flex justify-start align-middle items-center -my-1">';
+            $this->preview .=
+                '<div class="flex align-center items-center justify-center w-16 px-2 py-3 bg-gray-300 border-gray-400 border-t-2">' .
+                ($i + 1) .
+                '</div>';
+            $this->preview .= '<div class="bg-white px-2 py-3 border-white border-t-2 w-full">' .
+                static::entities($text) .
+                '</div>';
+            $this->preview .= '</div>';
         }
 
         return $this->preview;
+    }
+
+    /**
+     * Convert all applicable characters to HTML entities.
+     *
+     * @param string $string
+     * @return string
+     */
+    public static function entities(string $string): string
+    {
+        return htmlentities($string, ENT_QUOTES, 'utf-8', false);
     }
 
     /**
@@ -188,8 +316,19 @@ class Blunder
      *
      * @return bool
      */
-    public function render(): bool
+    public function render()
     {
+        $this->variables = [
+            'Backtrace' => $this->stackTrace['backtrace'],
+            'Get Request' => $_GET ?? [],
+            'Post Request' => $_POST ?? [],
+            'Files Request' => $_FILES ?? [],
+            'Cookie' => $_COOKIE ?? [],
+            'Session' => $_SESSION ?? [],
+            'Server' => $_SERVER ?? [],
+            'Environment' => $_ENV ?? [],
+        ];
+
         $this->setPreview();
 
         if (
@@ -199,6 +338,6 @@ class Blunder
             include_once __DIR__ . '/resources/views/app.php';
         }
 
-        return true;
+        return false;
     }
 }

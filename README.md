@@ -8,7 +8,7 @@ A PHP library that provides a pretty output for PHP error and exception handling
 
 This version supports PHP 8.0. You can install the package via composer:
 
-`composer require adrianmejias/blunder`
+`composer require --dev adrianmejias/blunder`
 
 ### Example
 ```php

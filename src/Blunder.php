@@ -338,6 +338,6 @@ class Blunder
             include_once __DIR__ . '/resources/views/app.php';
         }
 
-        return false;
+        return true;
     }
 }

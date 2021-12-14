@@ -318,7 +318,7 @@ class Blunder
      */
     public function render()
     {
-        $this->variables = [
+        $variables = $this->variables = [
             'Backtrace' => $this->stackTrace['backtrace'],
             'Get Request' => $_GET ?? [],
             'Post Request' => $_POST ?? [],
@@ -328,8 +328,8 @@ class Blunder
             'Server' => $_SERVER ?? [],
             'Environment' => $_ENV ?? [],
         ];
-
-        $this->setPreview();
+        $preview = $this->setPreview();
+        $stackTrace = $this->stackTrace;
 
         if (
             !defined('PHPUNIT_COMPOSER_INSTALL') &&

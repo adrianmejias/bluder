@@ -22,7 +22,7 @@
          stopOnFailure="false"
          verbose="true">
     <testsuites>
-        <testsuite name="Veil Test Suite">
+        <testsuite name="Blunder Test Suite">
             <directory suffix="Test.php">./tests</directory>
         </testsuite>
     </testsuites>
@@ -36,5 +36,9 @@
         <include>
             <directory suffix=".php">./src</directory>
         </include>
+        <exclude>
+            <directory suffix=".css">./src/css</directory>
+            <directory suffix=".php">./src/views</directory>
+        </exclude>
     </coverage>
 </phpunit>

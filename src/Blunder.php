@@ -145,7 +145,7 @@ class Blunder
         array_pop($backtrace);
 
         $this->setStackTrace(
-            $e::class,
+            get_class($e),
             $e->getCode(),
             $e->getMessage(),
             $e->getFile(),
